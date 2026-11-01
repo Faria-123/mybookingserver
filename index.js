@@ -8,13 +8,13 @@ const PORT = 8000
 const client = new MongoClient(process.env.MONGODB_URI);
 
 export async function connectToMongoDB() {
-    try {
-        await client.connect();
-        console.log("You successfully connected to MongoDB!");
-        return client;
-    } catch (err) {
-        console.dir(err);
-    }
+  try {
+    await client.connect();
+    console.log("You successfully connected to MongoDB!");
+    return client;
+  } catch (err) {
+    console.dir(err);
+  }
 }
 
 app.use(cors())
@@ -25,15 +25,15 @@ const mongoClient = await connectToMongoDB()
 const db = mongoClient.db("mybook")
 const books = db.collection("book")
 
-// app.post("/add-destination", async(req, res) => {
-//   const data = req.body
-//   const result = await destinationCollection.insertOne(data)
-//   res.send(result)
-// })
+app.post("/allbook", async (req, res) => {
+  const data = req.body
+  const result = await books.insertOne(data)
+  res.send(result)
+})
 
 app.get('/allbook', async (req, res) => {
-    const result = await books.find().toArray()
-    res.send(result)
+  const result = await books.find().toArray()
+  res.send(result)
 })
 
 // app.get('/destination/:id', async(req, res) => {
@@ -90,9 +90,9 @@ app.post('/add-book', async (req, res) => {
 //http://localhost:8000
 
 app.get('/', (req, res) => {
-    res.send({ message: 'Server is running fine!' })
+  res.send({ message: 'Server is running fine!' })
 })
 
 app.listen(PORT, () => {
-    console.log(`Server is running at ${PORT}`)
+  console.log(`Server is running at ${PORT}`)
 })
