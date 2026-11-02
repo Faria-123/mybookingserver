@@ -82,14 +82,22 @@ app.post("/borrow-book", async (req, res) => {
         message: "You have already borrowed this book",
       });
     }
+    // Borrow date
+    const borrowedAt = new Date();
+
+    // Return date (7 days after borrowing)
+    const returnDate = new Date(borrowedAt);
+    returnDate.setDate(returnDate.getDate() + 7);
 
     const borrowData = {
       bookId,
       bookTitle: book.title,
+      bookImage: book.image,
       userId,
       userName: userName || "",
       userEmail,
-      borrowedAt: new Date(),
+      borrowedAt,
+      returnDate,
       status: "borrowed",
     };
 
@@ -108,6 +116,70 @@ app.post("/borrow-book", async (req, res) => {
     });
   }
 });
+
+
+app.get("/my-borrows/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const result = await borrows
+      .find({
+        userId,
+        status: "borrowed",
+      })
+      .sort({ borrowedAt: -1 })
+      .toArray();
+
+    res.send(result);
+  } catch (error) {
+    res.status(500).send({
+      message: error.message,
+    });
+  }
+});
+
+
+app.patch("/return-book/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send({
+        message: "Invalid borrow ID",
+      });
+    }
+
+    const result = await borrows.updateOne(
+      {
+        _id: new ObjectId(id),
+        userId,
+        status: "borrowed",
+      },
+      {
+        $set: {
+          status: "returned",
+          returnedAt: new Date(),
+        },
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).send({
+        message: "Borrow record not found",
+      });
+    }
+
+    res.send({
+      message: "Book returned successfully",
+    });
+  } catch (error) {
+    res.status(500).send({
+      message: error.message,
+    });
+  }
+});
+
 
 app.get('/allbook', async (req, res) => {
   const result = await books.find().toArray()
