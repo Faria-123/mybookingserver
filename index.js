@@ -84,11 +84,34 @@ app.get("/allbook/details/:id", async (req, res) => {
 //   res.json(result)
 // })
 
-// app.delete('/destination/:id', async(req, res) => {
-//   const {id} = req.params
-//   const result = await destinationCollection.deleteOne({_id: new ObjectId(id)})
+// app.delete("/allbook/details/:id", async (req, res) => {
+//   const { id } = req.params
+//   const result = await destinationCollection.deleteOne({ _id: new ObjectId(id) })
 //   res.json(result)
 // })
+
+app.delete("/allbook/details/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send({ message: "Invalid ID" });
+    }
+
+    const result = await books.deleteOne({
+      _id: new ObjectId(id),
+    });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).send({ message: "Book not found" });
+    }
+
+    res.send({ message: "Book deleted successfully" });
+
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+});
 
 
 
