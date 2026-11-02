@@ -24,6 +24,11 @@ app.use(express.json())
 const mongoClient = await connectToMongoDB()
 const db = mongoClient.db("mybook")
 const books = db.collection("book")
+console.log(
+  await books.findOne({
+    _id: new ObjectId("6ae58cdee8accdf0f3ed0486")
+  })
+);
 
 app.post("/allbook", async (req, res) => {
   const data = req.body
@@ -35,12 +40,39 @@ app.get('/allbook', async (req, res) => {
   const result = await books.find().toArray()
   res.send(result)
 })
+app.get("/allbook/:email", async (req, res) => {
+  const { email } = req.params
+  const result = await books.find({ userEmail: email }).toArray();
+  res.send(result);
+})
 
-// app.get('/destination/:id', async(req, res) => {
-//   const {id} = req.params
-//   const result = await destinationCollection.findOne({_id: new ObjectId(id)})
-//   res.send(result)
+// app.get('/allbook/:id', async (req, res) => {
+//   const { id } = req.params;
+//   const result = await books.findOne({ _id: new ObjectId(id) });
+//   res.send(result);
 // })
+
+app.get("/allbook/details/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send({ message: "Invalid ID" });
+    }
+
+    const result = await books.findOne({
+      _id: new ObjectId(id),
+    });
+
+    if (!result) {
+      return res.status(404).send({ message: "Book not found" });
+    }
+
+    res.send(result);
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+});
 
 // app.patch('/destination/:id', async(req, res) => {
 //   const {id} = req.params
