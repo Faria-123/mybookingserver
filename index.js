@@ -21,9 +21,10 @@ app.use(cors())
 app.use(express.json())
 
 
-const mongoClient = await connectToMongoDB()
-const db = mongoClient.db("mybook")
-const books = db.collection("book")
+const mongoClient = await connectToMongoDB();
+const db = mongoClient.db("mybook");
+const books = db.collection("book");
+const borrows = db.collection("borrows");
 console.log(
   await books.findOne({
     _id: new ObjectId("6ae58cdee8accdf0f3ed0486")
@@ -35,6 +36,78 @@ app.post("/allbook", async (req, res) => {
   const result = await books.insertOne(data)
   res.send(result)
 })
+
+app.post("/borrow-book", async (req, res) => {
+  try {
+    const {
+      bookId,
+      bookTitle,
+      userId,
+      userName,
+      userEmail,
+    } = req.body;
+
+    if (!bookId || !userId || !userEmail) {
+      return res.status(400).send({
+        message: "Required information is missing",
+      });
+    }
+
+    if (!ObjectId.isValid(bookId)) {
+      return res.status(400).send({
+        message: "Invalid book ID",
+      });
+    }
+
+    // Check whether the book exists
+    const book = await books.findOne({
+      _id: new ObjectId(bookId),
+    });
+
+    if (!book) {
+      return res.status(404).send({
+        message: "Book not found",
+      });
+    }
+
+    // Prevent duplicate active borrowing
+    const alreadyBorrowed = await borrows.findOne({
+      bookId,
+      userId,
+      status: "borrowed",
+    });
+
+    if (alreadyBorrowed) {
+      return res.status(409).send({
+        message: "You have already borrowed this book",
+      });
+    }
+
+    const borrowData = {
+      bookId,
+      bookTitle: book.title,
+      userId,
+      userName: userName || "",
+      userEmail,
+      borrowedAt: new Date(),
+      status: "borrowed",
+    };
+
+    const result = await borrows.insertOne(borrowData);
+
+    res.status(201).send({
+      message: "Book borrowed successfully",
+      insertedId: result.insertedId,
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).send({
+      message: "Failed to borrow book",
+    });
+  }
+});
 
 app.get('/allbook', async (req, res) => {
   const result = await books.find().toArray()
@@ -112,7 +185,38 @@ app.delete("/allbook/details/:id", async (req, res) => {
     res.status(500).send({ message: error.message });
   }
 });
+app.put("/allbook/details/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
 
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send({ message: "Invalid book ID" });
+    }
+
+    const { title, author, category, image, description } = req.body;
+
+    const result = await books.updateOne(
+      { _id: new ObjectId(id) },
+      {
+        $set: {
+          title: title.trim(),
+          author: author.trim(),
+          category,
+          image: image.trim(),
+          description: description.trim(),
+        },
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).send({ message: "Book not found" });
+    }
+
+    res.send({ message: "Book updated successfully" });
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+});
 
 
 
