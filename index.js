@@ -2,6 +2,7 @@ import express from 'express'
 import { MongoClient, ObjectId } from 'mongodb';
 import cors from 'cors'
 import 'dotenv/config'
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 const app = express()
 const PORT = 8000
 
@@ -25,13 +26,34 @@ const mongoClient = await connectToMongoDB();
 const db = mongoClient.db("mybook");
 const books = db.collection("book");
 const borrows = db.collection("borrows");
+const VerifyApi = async (req, res, next) => {
+  const authorizedHeader = req.headers.authorization;
+  // console.log("Authorized Header:", authorizedHeader);
+
+  if (!authorizedHeader) {
+    return res.status(401).send({ message: "Unauthorized access" });
+  }
+  const token = authorizedHeader.split(' ')[1];
+  if (!token) {
+    return res.status(401).send({ message: "Unauthorized access" });
+  }
+  const JWKS = createRemoteJWKSet(new URL(`${process.env.CLIENT_URL}/api/auth/jwks`));
+  try {
+    const { payload } = await jwtVerify(token, JWKS);
+    next();
+  }
+  catch (error) {
+    return res.status(500).send({ message: "something went wrong" });
+  }
+
+}
 console.log(
   await books.findOne({
     _id: new ObjectId("6ae58cdee8accdf0f3ed0486")
   })
 );
 
-app.post("/allbook", async (req, res) => {
+app.post("/allbook", VerifyApi, async (req, res) => {
   const data = req.body
   const result = await books.insertOne(data)
   res.send(result)
@@ -185,7 +207,7 @@ app.get('/allbook', async (req, res) => {
   const result = await books.find().toArray()
   res.send(result)
 })
-app.get("/allbook/:email", async (req, res) => {
+app.get("/allbook/:email", VerifyApi, async (req, res) => {
   const { email } = req.params
   const result = await books.find({ userEmail: email }).toArray();
   res.send(result);
@@ -197,7 +219,7 @@ app.get("/allbook/:email", async (req, res) => {
 //   res.send(result);
 // })
 
-app.get("/allbook/details/:id", async (req, res) => {
+app.get("/allbook/details/:id", VerifyApi, async (req, res) => {
   try {
     const { id } = req.params;
 
