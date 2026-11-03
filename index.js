@@ -213,11 +213,7 @@ app.get("/allbook/:email", VerifyApi, async (req, res) => {
   res.send(result);
 })
 
-// app.get('/allbook/:id', async (req, res) => {
-//   const { id } = req.params;
-//   const result = await books.findOne({ _id: new ObjectId(id) });
-//   res.send(result);
-// })
+
 
 app.get("/allbook/details/:id", VerifyApi, async (req, res) => {
   try {
