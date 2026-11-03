@@ -237,15 +237,7 @@ app.get("/allbook/details/:id", VerifyApi, async (req, res) => {
   }
 });
 
-// app.patch('/destination/:id', async(req, res) => {
-//   const {id} = req.params
-//   const data = req.body
-//   const result = await destinationCollection.updateOne(
-//     {_id: new ObjectId(id)}, 
-//     {$set: data}
-//   )
-//   res.json(result)
-// })
+
 
 // app.delete("/allbook/details/:id", async (req, res) => {
 //   const { id } = req.params
